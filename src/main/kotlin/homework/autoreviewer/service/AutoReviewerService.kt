@@ -21,9 +21,13 @@ class AutoReviewerService(
             return
         }
         val prChanges = gitHubService.getFileChanges(dto.url)
-        val reviews = aiResponseHandlers.first { it.getAiName() == AiModel.getModel() }.handleResponse(prChanges)
-        reviews.forEach { review ->
-            gitHubService.addComment(dto.url, review)
+
+        prChanges.forEach { change ->
+            val review =
+                aiResponseHandlers.first { it.getAiName() == AiModel.getModel() }
+                    .handleResponse(listOf("한글로 code review 작성해줘", change))
+            println("review = $review")
+            gitHubService.addComment(dto.url, "[Ai Review] \n $review")
         }
     }
 }
