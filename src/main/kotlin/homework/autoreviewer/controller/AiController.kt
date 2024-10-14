@@ -1,13 +1,16 @@
 package homework.autoreviewer.controller
 
 import homework.autoreviewer.client.AiResponseHandler
-import homework.autoreviewer.client.github.GitHubService
 import homework.autoreviewer.controller.request.PullRequestRequest
+import homework.autoreviewer.controller.request.SetModelRequest
+import homework.autoreviewer.core.ai.model.AiModel
 import homework.autoreviewer.core.prefix.preFix
 import homework.autoreviewer.core.types.AiName
+import homework.autoreviewer.service.AutoReviewerService
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
@@ -19,7 +22,7 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("$preFix/ai")
 class AiController(
     private val aiResponseHandlers: List<AiResponseHandler>,
-    private val gitHubService: GitHubService,
+    private val autoReviewerService: AutoReviewerService,
 ) {
     @GetMapping("/test")
     fun test(
@@ -34,15 +37,19 @@ class AiController(
         return AiName.entries
     }
 
+    @PutMapping("/model")
+    fun setModel(
+        @RequestBody request: SetModelRequest,
+    ) {
+        AiModel.setModel(request.model)
+    }
+
     @PostMapping("/pr")
     @ResponseStatus(HttpStatus.OK)
     fun onPullRequestEvent(@RequestBody request: PullRequestRequest) {
         // PR 생성 이벤트일 때만 처리
-        if (request.action == "opened" || request.action == "reopened") {
-            val prNumber = request.pullRequest.number
-            val url = request.pullRequest.url
-            val commitSha = request.pullRequest.head.sha
-            gitHubService.addComment(url, commitSha, prNumber, "안녕하세요")
-        }
+        return autoReviewerService.reviewCode(
+            request.toDto()
+        )
     }
 }

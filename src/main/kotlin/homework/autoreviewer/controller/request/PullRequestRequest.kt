@@ -1,6 +1,7 @@
 package homework.autoreviewer.controller.request
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import homework.autoreviewer.service.AutoReviewDto
 
 data class PullRequestRequest(
     val action: String,
@@ -22,4 +23,10 @@ data class PullRequestRequest(
             val sha: String,
         )
     }
+
+    fun toDto() = AutoReviewDto(
+        action = action,
+        url = pullRequest.url,
+        commitSha = pullRequest.head.sha,
+    )
 }

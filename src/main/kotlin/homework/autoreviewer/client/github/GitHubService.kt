@@ -3,6 +3,7 @@ package homework.autoreviewer.client.github
 import homework.autoreviewer.client.ClientTemplate
 import io.ktor.client.call.body
 import io.ktor.client.request.bearerAuth
+import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
@@ -25,22 +26,44 @@ data class GitHubReviewCreateResponse(
     val commitId: String,
 )
 
+@Serializable
+data class GitHubPullRequestFilesResponse(
+    val filename: String,
+    val additions: Int,
+    val patch: String,
+)
+
 @Component
 class GitHubService(
     private val clientTemplate: ClientTemplate,
     @Value("\${github.api-key}") private val apiKey: String,
+    @Value("\${reviewer.review-target.file-extension}") private val reviewTargetFileExtensions: List<String>,
 ) {
+    fun getFileChanges(url: String): List<String> {
+        return runBlocking {
+            val httpResponse: HttpResponse =
+                // https://docs.github.com/ko/rest/pulls/pulls?apiVersion=2022-11-28#list-pull-requests-files
+                clientTemplate.getHttpClient().get("$url/files") {
+                    header("Accept", "application/vnd.github+json")
+                    bearerAuth(apiKey)
+                    header("X-GitHub-Api-Version", "2022-11-28")
+                    contentType(ContentType.Application.Json)
+                }
+            val response: List<GitHubPullRequestFilesResponse> = httpResponse.body()
+            response.filter { file -> reviewTargetFileExtensions.any { file.filename.endsWith(it) } }
+                .map { file -> file.patch }
+        }
+    }
+
     fun addComment(
         url: String,
-        commitSha: String,
-        prNumber: Int,
         comment: String,
     ) {
         val reviewCreateResponse = getPullRequestUrl(url, comment)
         submitReview(url, reviewCreateResponse.id)
     }
 
-    private fun submitReview(url: String, reviewId: Long) {
+    fun submitReview(url: String, reviewId: Long) {
         runBlocking {
             clientTemplate.getHttpClient().post("$url/reviews/$reviewId/events") {
                 header("Accept", "application/vnd.github+json")
