@@ -2,8 +2,9 @@ server:
   port: 8080
 
 reviewer:
-  name: openai
-  key:
+  language: ko
+  review-target:
+    file-extension: kt,ts,js
 
 chatgpt:
   api-key:
