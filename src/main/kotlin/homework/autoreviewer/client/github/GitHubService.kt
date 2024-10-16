@@ -49,6 +49,7 @@ class GitHubService(
                     header("X-GitHub-Api-Version", "2022-11-28")
                     contentType(ContentType.Application.Json)
                 }
+                // test
             val response: List<GitHubPullRequestFilesResponse> = httpResponse.body()
             response.filter { file -> reviewTargetFileExtensions.any { file.filename.endsWith(it) } }
                 .map { file -> file.patch }
@@ -71,13 +72,15 @@ class GitHubService(
                 header("X-GitHub-Api-Version", "2022-11-28")
                 contentType(ContentType.Application.Json)
                 setBody(mapOf("event" to "COMMENT"))
+                // test
             }
         }
     }
 
     private fun getPullRequestUrl(url: String, comment: String): GitHubReviewCreateResponse {
         val body = mapOf(
-            "body" to comment
+            "body" to comment,
+            "event" to "COMMENT"
         )
 
         return runBlocking {
